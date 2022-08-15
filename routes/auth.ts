@@ -1,6 +1,7 @@
-import { LoginReq } from "./../models/LoginReq";
-import { AuthRes } from "./../models/AuthRes";
-import { NewUserReq } from "./../models/NewUserReq";
+import { ErrorRes } from "./../models/ErrorRes";
+import { LoginReq } from "../models/auth/AuthReq";
+import { AuthRes } from "../models/auth/AuthRes";
+import { NewUserReq } from "../models/auth/NewUserReq";
 import { User } from "./../models/User";
 
 import { compare, genSalt, hash } from "bcrypt";
@@ -28,6 +29,11 @@ router.post("/register", async (req: Request, res: Response) => {
   try {
     var newUserReq: NewUserReq = req.body;
 
+    if (newUserReq.password != newUserReq.rePassword) {
+      return res
+        .status(500)
+        .json({ error: "password and confirm password cannot be different" });
+    }
     const salt: string = await genSalt(10);
     const hashedPassword: string = await hash(newUserReq.password, salt);
 
@@ -65,7 +71,7 @@ router.post("/register", async (req: Request, res: Response) => {
     return res.status(200).json(authResponse);
   } catch (error: any) {
     if (error.constraint) {
-      res.status(500).json(error.constraint);
+      return res.status(500).json(error.constraint);
     }
     return res.status(500).json(error);
   }
@@ -80,12 +86,17 @@ router.post("/login", async (req: Request, res: Response) => {
       from users \
       where email = $1;";
 
+    const errorRes: ErrorRes = {
+      error_message: "",
+    };
     var values: any[] = [loginReq.email];
 
     var result: QueryResult<any> = await runQuery(query_text, values);
 
     if (result.rowCount != 1) {
-      return res.status(404).json("account does not exist");
+      errorRes.field = "email";
+      errorRes.error_message = "Account does not exist";
+      return res.status(404).json(errorRes);
     }
 
     var rows: User[] = result.rows;
@@ -97,7 +108,9 @@ router.post("/login", async (req: Request, res: Response) => {
     );
 
     if (!validPassword) {
-      return res.status(403).json("wrong password");
+      errorRes.field = "password";
+      errorRes.error_message = "wrong password";
+      return res.status(403).json(errorRes);
     }
 
     var seccretKey: Secret = process.env.SECRET_KEY!;
@@ -112,11 +125,14 @@ router.post("/login", async (req: Request, res: Response) => {
           token: accessToken,
         };
 
-        res.status(201).json(authResponse);
+        return res.status(201).json(authResponse);
       }
     ));
-  } catch (error) {
-    res.status(500).json(error);
+  } catch (error: any) {
+    const errorRes: ErrorRes = {
+      error_message: error.toString(),
+    };
+    return res.status(500).json(errorRes);
   }
 });
 

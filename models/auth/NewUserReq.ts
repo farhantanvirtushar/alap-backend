@@ -3,4 +3,5 @@ export interface NewUserReq {
   last_name: string;
   email: string;
   password: string;
+  rePassword: string;
 }

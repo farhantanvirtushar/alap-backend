@@ -1,6 +1,4 @@
-import { LoginReq } from "./../models/LoginReq";
-import { AuthRes } from "./../models/AuthRes";
-import { NewUserReq } from "./../models/NewUserReq";
+import { InboxItem } from "./../models/message/InboxItem";
 import { User } from "./../models/User";
 
 import { compare, genSalt, hash } from "bcrypt";
@@ -24,6 +22,8 @@ const authenticate = require("../middlewires/jwt");
 
 import jwt, { Secret, SignCallback } from "jsonwebtoken";
 import { QueryResult } from "pg";
+import { Message } from "../models/message/Message";
+import { ErrorRes } from "../models/ErrorRes";
 
 router.get("/all", authenticate, async (req: Request, res: Response) => {
   try {
@@ -40,6 +40,82 @@ router.get("/all", authenticate, async (req: Request, res: Response) => {
     // const chatListRes: User[] = users;
 
     return res.status(200).json(users);
+  } catch (error: any) {
+    if (error.constraint) {
+      res.status(500).json(error.constraint);
+    }
+    return res.status(500).json(error);
+  }
+});
+
+router.get("/inbox", authenticate, async (req: Request, res: Response) => {
+  try {
+    var reqUser: User = req.body.user;
+
+    var query_text: string =
+      "SELECT last_message_time, contact_id, first_name, last_name,profile_photo\
+      FROM users inner join \
+      (SELECT max(created_at) as last_message_time, \
+      CASE \
+          WHEN sender_id != $1 THEN sender_id\
+          WHEN receiver_id != $1 THEN receiver_id\
+      END AS contact_id\
+      FROM messages \
+      WHERE sender_id = $1 or receiver_id = $1\
+      GROUP BY contact_id) inbox on user_id = contact_id\
+      ORDER BY last_message_time desc;";
+
+    var values: any[] = [reqUser.user_id];
+
+    var result: QueryResult<InboxItem> = await runQuery(query_text, values);
+    var inboxItemList: InboxItem[] = result.rows;
+
+    // const chatListRes: User[] = users;
+
+    return res.status(200).json(inboxItemList);
+  } catch (error: any) {
+    var errorRes: ErrorRes = {
+      error_message: "Something went wrong",
+    };
+    if (error.constraint) {
+      errorRes.error_message = error.constraint;
+      return res.status(500).json(errorRes);
+    }
+    errorRes.error = error;
+    return res.status(500).json(errorRes);
+  }
+});
+
+router.post("/send", authenticate, async (req: Request, res: Response) => {
+  try {
+    var reqUser: User = req.body.user;
+    var message: Message = req.body;
+
+    const errorRes: ErrorRes = {
+      error_message: "",
+    };
+
+    if (message.sender_id != reqUser.user_id) {
+      errorRes.error_message = "Authentication failed";
+      return res.status(500).json(errorRes);
+    }
+
+    var query_text: string =
+      "INSERT INTO messages (sender_id, receiver_id,text,image_url,video_url)\
+      VALUES($1,$2,$3,$4,$5) RETURNING *;";
+
+    var values: any[] = [
+      message.sender_id,
+      message.receiver_id,
+      message.text,
+      message.image_url,
+      message.video_url,
+    ];
+
+    var result: QueryResult<any> = await runQuery(query_text, values);
+    var message: Message = result.rows[0];
+
+    return res.status(200).json(message);
   } catch (error: any) {
     if (error.constraint) {
       res.status(500).json(error.constraint);
