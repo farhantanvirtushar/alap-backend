@@ -61,7 +61,7 @@ router.post("/register", async (req: Request, res: Response) => {
     var accessToken: string = jwt.sign(newUser, secretKey);
 
     const authResponse: AuthRes = {
-      user_id: newUser.user_id,
+      user_id: newUser.user_id!,
       first_name: newUser.first_name,
       last_name: newUser.last_name,
       email: newUser.email,
@@ -118,7 +118,7 @@ router.post("/login", async (req: Request, res: Response) => {
     jwt.sign(user, seccretKey, <SignCallback>(
       function (err: Error, accessToken: string) {
         const authResponse: AuthRes = {
-          user_id: user.user_id,
+          user_id: user.user_id!,
           first_name: user.first_name,
           last_name: user.last_name,
           email: user.email,

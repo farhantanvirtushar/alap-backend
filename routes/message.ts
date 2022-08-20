@@ -48,6 +48,68 @@ router.get("/all", authenticate, async (req: Request, res: Response) => {
   }
 });
 
+router.get("/user/:id", authenticate, async (req: Request, res: Response) => {
+  try {
+    var reqUser: User = req.body.user;
+
+    const user_id: string = req.params.id;
+    console.log(user_id);
+    var query_text: string =
+      "SELECT first_name,last_name,profile_photo,phone_no,email,date_of_birth\
+      FROM users\
+      WHERE user_id = $1;";
+
+    var values: string[] = [user_id];
+
+    var result: QueryResult<User> = await runQuery(query_text, values);
+    if (result.rowCount == 0) {
+      const errorRes: ErrorRes = {
+        error_message: "User does not exist",
+      };
+      return res.status(404).json(errorRes);
+    }
+    var user: User = result.rows[0];
+
+    console.log(user);
+    // const chatListRes: User[] = users;
+
+    return res.status(200).json(user);
+  } catch (error: any) {
+    var errorRes: ErrorRes = {
+      error_message: "Something went wrong",
+    };
+    if (error.constraint) {
+      errorRes.error_message = error.constraint;
+      return res.status(500).json(errorRes);
+    }
+    errorRes.error = error;
+    return res.status(500).json(errorRes);
+  }
+});
+
+// router.get("/:id", authenticate, async (req: Request, res: Response) => {
+//   try {
+//     var reqUser: User = req.body.user;
+
+//     var query_text: string = "SELECT *\
+//       FROM users;";
+
+//     var values: string[] = [];
+
+//     var result: QueryResult<any> = await runQuery(query_text, values);
+//     var users: User[] = result.rows;
+
+//     // const chatListRes: User[] = users;
+
+//     return res.status(200).json(users);
+//   } catch (error: any) {
+//     if (error.constraint) {
+//       res.status(500).json(error.constraint);
+//     }
+//     return res.status(500).json(error);
+//   }
+// });
+
 router.get("/inbox", authenticate, async (req: Request, res: Response) => {
   try {
     var reqUser: User = req.body.user;
