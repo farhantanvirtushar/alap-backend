@@ -165,32 +165,44 @@ router.post("/send", authenticate, async (req: Request, res: Response) => {
       error_message: "",
     };
 
-    if (message.sender_id != reqUser.user_id) {
-      errorRes.error_message = "Authentication failed";
-      return res.status(500).json(errorRes);
-    }
-
     var query_text: string =
       "INSERT INTO messages (sender_id, receiver_id,text,image_url,video_url)\
-      VALUES($1,$2,$3,$4,$5) RETURNING *;";
+      VALUES($1,$2,$3,$4,$5);";
 
     var values: any[] = [
-      message.sender_id,
+      reqUser.user_id,
       message.receiver_id,
       message.text,
       message.image_url,
       message.video_url,
     ];
 
-    var result: QueryResult<any> = await runQuery(query_text, values);
-    var message: Message = result.rows[0];
+    var result: QueryResult<Message> = await runQuery(query_text, values);
 
-    return res.status(200).json(message);
+    query_text = "SELECT *\
+      FROM messages\
+      WHERE (sender_id = $1 and receiver_id = $2)\
+      OR (sender_id = $2 and receiver_id = $1)\
+      ORDER BY created_at DESC;";
+
+    values = [reqUser.user_id!.toString(),message.receiver_id];
+
+    result = await runQuery(query_text, values);
+    console.log(result)
+    var messageList: Message[] = result.rows;
+
+    return res.status(200).json(messageList);
   } catch (error: any) {
+    var errorRes: ErrorRes = {
+      error_message: "Something went wrong",
+    };
+    console.log(error)
     if (error.constraint) {
-      res.status(500).json(error.constraint);
+      errorRes.error_message = error.constraint;
+      return res.status(500).json(errorRes);
     }
-    return res.status(500).json(error);
+    errorRes.error = error;
+    return res.status(500).json(errorRes);
   }
 });
 
