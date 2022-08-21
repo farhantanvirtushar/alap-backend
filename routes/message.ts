@@ -87,28 +87,36 @@ router.get("/user/:id", authenticate, async (req: Request, res: Response) => {
   }
 });
 
-// router.get("/:id", authenticate, async (req: Request, res: Response) => {
-//   try {
-//     var reqUser: User = req.body.user;
+router.get("/message-list/:id", authenticate, async (req: Request, res: Response) => {
+  try {
+    var reqUser: User = req.body.user;
 
-//     var query_text: string = "SELECT *\
-//       FROM users;";
+    var query_text: string = "SELECT *\
+      FROM messages\
+      WHERE (sender_id = $1 and receiver_id = $2)\
+      OR (sender_id = $2 and receiver_id = $1)\
+      ORDER BY created_at DESC;";
 
-//     var values: string[] = [];
+    var values: string[] = [reqUser.user_id!.toString(),req.params.id];
 
-//     var result: QueryResult<any> = await runQuery(query_text, values);
-//     var users: User[] = result.rows;
+    var result: QueryResult<Message> = await runQuery(query_text, values);
+    var messageList: Message[] = result.rows;
 
-//     // const chatListRes: User[] = users;
+    // const chatListRes: User[] = users;
 
-//     return res.status(200).json(users);
-//   } catch (error: any) {
-//     if (error.constraint) {
-//       res.status(500).json(error.constraint);
-//     }
-//     return res.status(500).json(error);
-//   }
-// });
+    return res.status(200).json(messageList);
+  } catch (error: any) {
+    var errorRes: ErrorRes = {
+      error_message: "Something went wrong",
+    };
+    if (error.constraint) {
+      errorRes.error_message = error.constraint;
+      return res.status(500).json(errorRes);
+    }
+    errorRes.error = error;
+    return res.status(500).json(errorRes);
+  }
+});
 
 router.get("/inbox", authenticate, async (req: Request, res: Response) => {
   try {
