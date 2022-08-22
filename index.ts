@@ -5,8 +5,24 @@ import dotenv from "dotenv";
 import morgan from "morgan";
 import helmet from "helmet";
 
+import { removeUser, socketIdToUserMap, users } from "./socket-users"; 
+import http from 'http';
+import { Server } from "socket.io";
+import { SocketUser } from "./models/SocketUser";
+
+const server = http.createServer(app);
+const io = new Server(server,{
+  cors:{
+    origin:"*",
+    methods:["GET, POST, OPTIONS, PUT, PATCH, DELETE"],
+    allowedHeaders:["X-Requested-With","Content-Type","X-CSRFToken","Authorization"]
+
+  }
+});
+
 const authRouter = require("./routes/auth");
 const messageRouter = require("./routes/message");
+
 // import departmentRouter from "./routes/departments.js";
 // import categoryRouter from "./routes/categories.js";
 // import productRouter from "./routes/products.js";
@@ -49,11 +65,26 @@ app.use(function (req, res, next) {
   next();
 });
 
+io.on('connection', (socket) => {
+  console.log('a user connected with id : '+socket.id);
+
+  socket.on("add-user",(userId:number)=>{
+    console.log("user id : "+ userId)
+    console.log("socket id : "+ socket.id)
+    users[userId] = socket.id;
+    socketIdToUserMap[socket.id] = userId;
+  })
+  
+  socket.on("disconnect",(reason)=>{
+    console.log("user disconnected")
+    console.log(reason)
+    removeUser(socket.id)
+  })
+});
+
+app.set('socketio',io);
+
 app.use("/api/auth/", authRouter);
 app.use("/api/message/", messageRouter);
-// app.use("/api/departments/", departmentRouter);
-// app.use("/api/categories/", categoryRouter);
-// app.use("/api/products/", productRouter);
-// app.use("/api/orders/", orderRouter);
-// app.use("/api/caterings/", cateringRouter);
-app.listen(process.env.PORT || 5000);
+
+server.listen(process.env.PORT || 5000);

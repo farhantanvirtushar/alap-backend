@@ -24,6 +24,9 @@ import jwt, { Secret, SignCallback } from "jsonwebtoken";
 import { QueryResult } from "pg";
 import { Message } from "../models/message/Message";
 import { ErrorRes } from "../models/ErrorRes";
+import { Server } from "socket.io";
+import { users } from "../socket-users";
+import { SocketUser } from "../models/SocketUser";
 
 router.get("/all", authenticate, async (req: Request, res: Response) => {
   try {
@@ -167,7 +170,7 @@ router.post("/send", authenticate, async (req: Request, res: Response) => {
 
     var query_text: string =
       "INSERT INTO messages (sender_id, receiver_id,text,image_url,video_url)\
-      VALUES($1,$2,$3,$4,$5);";
+      VALUES($1,$2,$3,$4,$5) RETURNING *;";
 
     var values: any[] = [
       reqUser.user_id,
@@ -178,20 +181,20 @@ router.post("/send", authenticate, async (req: Request, res: Response) => {
     ];
 
     var result: QueryResult<Message> = await runQuery(query_text, values);
+    var newMessage: Message = result.rows[0];
 
-    query_text = "SELECT *\
-      FROM messages\
-      WHERE (sender_id = $1 and receiver_id = $2)\
-      OR (sender_id = $2 and receiver_id = $1)\
-      ORDER BY created_at DESC;";
+    var io:Server = req.app.get('socketio');
+    const socketId: string = users[message.receiver_id];
 
-    values = [reqUser.user_id!.toString(),message.receiver_id];
+    console.log("sending to socket with id : "+socketId)
+    if(socketId != null){
+      io.to(socketId).emit("new-message",newMessage );
+    }else{
+      console.log("user not online , id : "+message.receiver_id);
+    }
+    
 
-    result = await runQuery(query_text, values);
-    console.log(result)
-    var messageList: Message[] = result.rows;
-
-    return res.status(200).json(messageList);
+    return res.status(200).json({"message":"message sent"});
   } catch (error: any) {
     var errorRes: ErrorRes = {
       error_message: "Something went wrong",

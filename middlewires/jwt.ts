@@ -37,7 +37,7 @@ const authenticate = async (
   }
 };
 
-const verifyToken = async (token: string): Promise<User> => {
+export const verifyToken = async (token: string): Promise<User> => {
   return new Promise<User>((resolve, reject) => {
     var seccretKey: Secret = process.env.SECRET_KEY!;
 
