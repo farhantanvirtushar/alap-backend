@@ -22,6 +22,7 @@ const io = new Server(server,{
 
 const authRouter = require("./routes/auth");
 const messageRouter = require("./routes/message");
+const userRouter = require("./routes/user");
 
 // import departmentRouter from "./routes/departments.js";
 // import categoryRouter from "./routes/categories.js";
@@ -86,5 +87,6 @@ app.set('socketio',io);
 
 app.use("/api/auth/", authRouter);
 app.use("/api/message/", messageRouter);
+app.use("/api/user/", userRouter);
 
 server.listen(process.env.PORT || 5000);
