@@ -17,9 +17,7 @@
         "@types/morgan": "^1.9.3",
         "@types/pg": "^8.6.5",
         "nodemon": "^2.0.15",
-        "sequelize-cli": "^6.4.1",
-        "ts-node": "^10.7.0",
-        "typescript": "^4.6.3"
+        "sequelize-cli": "^6.4.1"
     },
     "dependencies": {
         "ts-node": "^10.7.0",
