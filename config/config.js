@@ -1,9 +1,14 @@
+var dotenv = require("dotenv");
+
+dotenv.config();
+
+module.exports =
 {
     "development": {
-        "username": "suznypxovoiede",
-        "password": "1b145621be305a7efc97970ac51c1ae4783930fa6244dccaca90650d62c0102c",
-        "database": "db8vve4q8o6dj9",
-        "host": "ec2-18-214-134-226.compute-1.amazonaws.com",
+        "username": process.env.PGUSER,
+        "password": process.env.PGPASSWORD,
+        "database": process.env.PGDATABASE,
+        "host": process.env.PGHOST,
         "port": 5432,
         "dialect": "postgres",
         "dialectOptions": {
@@ -14,10 +19,10 @@
         }
     },
     "test": {
-        "username": "suznypxovoiede",
-        "password": "1b145621be305a7efc97970ac51c1ae4783930fa6244dccaca90650d62c0102c",
-        "database": "db8vve4q8o6dj9",
-        "host": "ec2-18-214-134-226.compute-1.amazonaws.com",
+        "username": process.env.PGUSER,
+        "password": process.env.PGPASSWORD,
+        "database": process.env.PGDATABASE,
+        "host": process.env.PGHOST,
         "port": 5432,
         "dialect": "postgres",
         "dialectOptions": {
@@ -28,10 +33,10 @@
         }
     },
     "production": {
-        "username": "suznypxovoiede",
-        "password": "1b145621be305a7efc97970ac51c1ae4783930fa6244dccaca90650d62c0102c",
-        "database": "db8vve4q8o6dj9",
-        "host": "ec2-18-214-134-226.compute-1.amazonaws.com",
+        "username": process.env.PGUSER,
+        "password": process.env.PGPASSWORD,
+        "database": process.env.PGDATABASE,
+        "host": process.env.PGHOST,
         "port": 5432,
         "dialect": "postgres",
         "dialectOptions": {
